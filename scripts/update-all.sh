@@ -81,7 +81,9 @@ if [[ ! -f "config/autoload/local.php" && $bypass -eq 0  ]]; then
 	exit 1
 fi
 
-git pull
+# git pull
+
+git pull origin master || echo "Git pull skipped for local dev branch."
 
 if [ $? != 0 ]; then
 	echo "A problem occurred while retrieving remote files from repository."

@@ -32,8 +32,11 @@ if [ ! -f "/var/www/html/monarc/.docker-initialized" ]; then
     echo -e "${YELLOW}Creating module symlinks...${NC}"
     mkdir -p module/Monarc
     cd module/Monarc
-    ln -sfn ./../../vendor/monarc/core Core
-    ln -sfn ./../../vendor/monarc/backoffice BackOffice
+    # ln -sfn ./../../vendor/monarc/core Core
+    # ln -sfn ./../../vendor/monarc/backoffice BackOffice
+
+    ln -sfn /var/www/html/zm-core Core
+    ln -sfn /var/www/html/zm-backoffice BackOffice
     cd /var/www/html/monarc
 
     # Clone frontend repositories
