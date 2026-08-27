@@ -39,6 +39,16 @@
             "email": "ruslan.baidan@cases.lu"
         }
     ],
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/ASINBenin/zm-core.git"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/ASINBenin/zm-backoffice.git"
+        }
+    ],
     "require": {
         "php": "^8.0",
         "ext-json": "*",

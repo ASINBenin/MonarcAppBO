@@ -5,13 +5,13 @@
   "private": true,
   "repository": {
     "type": "git",
-    "url": "https://github.com/monarc-project/MonarcAppBO"
+    "url": "https://github.com/ASINBenin/MonarcAppBO"
   },
   "author": "CASES",
   "license": "GNU Affero General Public License version 3",
   "dependencies": {
-    "ng_anr": "git+https://github.com/monarc-project/ng-anr.git",
-    "ng_backoffice": "git+https://github.com/monarc-project/ng-backoffice.git"
+    "ng_anr": "git+https://github.com/ASINBenin/ng-anr.git",
+    "ng_backoffice": "git+https://github.com/ASINBenin/ng-backoffice.git"
   },
   "devDependencies": {
     "grunt": "~1.5.3",

@@ -106,11 +106,14 @@ if [[ $bypass -eq 0 ]]; then
 fi
 
 if [[ -d node_modules && -d node_modules/ng_anr ]]; then
-	if [[ -d node_modules/ng_anr/.git ]]; then
-		checkout_to_ref_if_set_or_latest_tag node_modules/ng_backoffice "$frontendRef"
-		checkout_to_ref_if_set_or_latest_tag node_modules/ng_anr "$frontendRef"
+	if [[ -d node_modules/ng_backoffice/.git && -d node_modules/ng_anr/.git ]]; then
+		# checkout_to_ref_if_set_or_latest_tag node_modules/ng_backoffice "$frontendRef"
+		# checkout_to_ref_if_set_or_latest_tag node_modules/ng_anr "$frontendRef"
+
+		echo "Utilisation des modules frontend locaux / ASINBenin."
 	else
-		npm update
+		# npm update
+		echo "node_modules/ng_* are not git repos; skipping frontend repository update."
 	fi
 fi
 

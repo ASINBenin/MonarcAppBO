@@ -83,6 +83,16 @@ services:
       # Preserve vendor directory in named volume for better performance
       - vendor_data:/var/www/html/monarc/vendor
       - node_modules_data:/var/www/html/monarc/node_modules
+
+      # Montages directs des modules locaux Backend (Composer & Laminas)
+      - ../zm-core:/var/www/html/monarc/vendor/monarc/core
+      - ../zm-backoffice:/var/www/html/monarc/vendor/monarc/backoffice
+      - ../zm-core:/var/www/html/monarc/module/Monarc/Core
+      - ../zm-backoffice:/var/www/html/monarc/module/Monarc/BackOffice
+      
+      # Montages directs des modules locaux Frontend (AngularJS & Grunt)
+      - ../ng-backoffice:/var/www/html/monarc/node_modules/ng_backoffice
+      - ../ng-anr:/var/www/html/monarc/node_modules/ng_anr
     working_dir: /var/www/html/monarc
 
 networks:

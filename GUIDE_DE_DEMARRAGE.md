@@ -3,15 +3,19 @@
 > **Application Hôte :** `MonarcAppBO` (Port HTTP `5002`)  
 > **Racine de l'application :** `./MonarcAppBO`  
 > **Structure des dépôts :** Dépôts frères à la racine de `v_current` (`../zm-core`, `../zm-backoffice`, `../ng-anr`, `../ng-backoffice`)  
+> **Organisation GitHub :** [ASINBenin](https://github.com/ASINBenin)  
 
 ---
 
 ## 📌 Table des Matières
 - [🏗️ 1. Architecture & Dépendances du BackOffice](#️-1-architecture--dépendances-du-backoffice)
-- [🛠️ 2. Configuration & Points d'Intégration Clés](#️-2-configuration--points-dintégration-clés)
+- [🛠️ 2. Configurations de Déroutage ASINBenin & Points d'Intégration Clés](#️-2-configurations-de-déroutage-asinbenin--points-dintégration-clés)
   - [A. Configuration Environnement (`.env`)](#a-configuration-environnement-env)
   - [B. Montage des Dépôts Locaux (`docker-compose.dev.yml`)](#b-montage-des-dépôts-locaux-docker-composedevyml)
-  - [C. Liens Symboliques Dynamiques (`docker-entrypoint.sh`)](#c-liens-symboliques-dynamiques-docker-entrypointsh)
+  - [C. Redirection npm (`package.json`)](#c-redirection-npm-packagejson)
+  - [D. Redirection Composer (`composer.json`)](#d-redirection-composer-composerjson)
+  - [E. Liens Symboliques Dynamiques Backend & Frontend (`docker-entrypoint.sh`)](#e-liens-symboliques-dynamiques-backend--frontend-docker-entrypointsh)
+  - [F. Neutralisation des Checkouts Git Distants (`scripts/update-all.sh`)](#f-neutralisation-des-checkouts-git-distants-scriptsupdate-allsh)
 - [🚀 3. Procédure Automatisée de Démarrage (PowerShell)](#-3-procédure-automatisée-de-démarrage-powershell)
 - [🌐 4. Accès & Identifiants Administrateur](#-4-accès--identifiants-administrateur)
 - [⚠️ 5. Guide de Dépannage & Correctifs Historiques](#-5-guide-de-dépannage--correctifs-historiques)
@@ -35,7 +39,7 @@ Bases de données associées :
 
 ---
 
-## 🛠️ 2. Configuration & Points d'Intégration Clés
+## 🛠️ 2. Configurations de Déroutage ASINBenin & Points d'Intégration Clés
 
 ### A. Configuration Environnement (`.env`)
 Dans `MonarcAppBO/.env` :
@@ -69,13 +73,64 @@ MONARC_NETWORK_NAME=monarc-network
       - node_modules_data:/var/www/html/monarc/node_modules
 ```
 
-### C. Liens Symboliques Dynamiques (`docker-entrypoint.sh`)
+### C. Redirection npm (`package.json`)
+Dans `MonarcAppBO/package.json`, pointer les dépendances frontend vers l'organisation **ASINBenin** :
+```json
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ASINBenin/MonarcAppBO"
+  },
+  "dependencies": {
+    "ng_anr": "git+https://github.com/ASINBenin/ng-anr.git",
+    "ng_backoffice": "git+https://github.com/ASINBenin/ng-backoffice.git"
+  }
+```
+
+### D. Redirection Composer (`composer.json`)
+Dans `MonarcAppBO/composer.json`, déclarer les dépôts VCS pointant vers **ASINBenin** :
+```json
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/ASINBenin/zm-core.git"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/ASINBenin/zm-backoffice.git"
+        }
+    ],
+```
+
+### E. Liens Symboliques Dynamiques Backend & Frontend (`docker-entrypoint.sh`)
+Dans `MonarcAppBO/docker-entrypoint.sh` :
 ```bash
+    # Liens Backend
     mkdir -p module/Monarc
     cd module/Monarc
     ln -sfn /var/www/html/zm-core Core
     ln -sfn /var/www/html/zm-backoffice BackOffice
     cd /var/www/html/monarc
+
+    # Liens Frontend
+    mkdir -p node_modules
+    cd node_modules
+    ln -sfn /var/www/html/ng-backoffice ng_backoffice
+    ln -sfn /var/www/html/ng-anr ng_anr
+    cd /var/www/html/monarc
+```
+
+### F. Neutralisation des Checkouts Git Distants (`scripts/update-all.sh`)
+Dans `MonarcAppBO/scripts/update-all.sh`, neutraliser le `checkout_to_ref` pour préserver le code local :
+```bash
+if [[ -d node_modules/ng_backoffice && -d node_modules/ng_anr ]]; then
+    if [[ -d node_modules/ng_backoffice/.git && -d node_modules/ng_anr/.git ]]; then
+        # checkout_to_ref_if_set_or_latest_tag node_modules/ng_backoffice "$frontendRef"
+        # checkout_to_ref_if_set_or_latest_tag node_modules/ng_anr "$frontendRef"
+        echo "Utilisation des modules frontend locaux / ASINBenin."
+    else
+        echo "node_modules/ng_* are not git repos; skipping frontend repository update."
+    fi
+fi
 ```
 
 ---

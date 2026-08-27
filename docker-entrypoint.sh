@@ -44,13 +44,16 @@ if [ ! -f "/var/www/html/monarc/.docker-initialized" ]; then
     mkdir -p node_modules
     cd node_modules
 
-    if [ ! -d "ng_backoffice" ]; then
-        git clone --config core.fileMode=false https://github.com/monarc-project/ng-backoffice.git ng_backoffice
-    fi
+    ln -sfn /var/www/html/ng-backoffice ng_backoffice
+    ln -sfn /var/www/html/ng-anr ng_anr
 
-    if [ ! -d "ng_anr" ]; then
-        git clone --config core.fileMode=false https://github.com/monarc-project/ng-anr.git ng_anr
-    fi
+    # if [ ! -d "ng_backoffice" ]; then
+    #     git clone --config core.fileMode=false https://github.com/monarc-project/ng-backoffice.git ng_backoffice
+    # fi
+
+    # if [ ! -d "ng_anr" ]; then
+    #     git clone --config core.fileMode=false https://github.com/monarc-project/ng-anr.git ng_anr
+    # fi
 
     cd /var/www/html/monarc
 
