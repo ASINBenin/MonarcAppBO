@@ -9,7 +9,9 @@ services:
       MYSQL_DATABASE: ${DBNAME_COMMON}
       MYSQL_USER: ${DBUSER_MONARC}
       MYSQL_PASSWORD: ${DBPASSWORD_MONARC}
-    command: 
+      # Required by docker/db-init/10-dev-grants.sh, which is skipped when this is unset
+      DBUSER_MONARC: ${DBUSER_MONARC}
+    command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_general_ci
       - --bind-address=0.0.0.0

@@ -83,7 +83,9 @@ fi
 
 # git pull
 
-git pull origin master || echo "Git pull skipped for local dev branch."
+# Disabled: on a dev checkout this merged origin/master into the current branch at first start.
+# git pull origin master || echo "Git pull skipped for local dev branch."
+echo "Git pull disabled; update the repository manually."
 
 if [ $? != 0 ]; then
 	echo "A problem occurred while retrieving remote files from repository."

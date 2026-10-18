@@ -1,0 +1,81 @@
+FROM ubuntu:22.04
+
+# Release image of the BackOffice: the application (vendor, node_modules, public resources)
+# is prepared by the CI before the build and copied as is. Nothing is built at startup.
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANGUAGE=en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+
+# Install system dependencies
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y zip unzip gettext curl gsfonts mariadb-client apache2 php8.1 php8.1-cli \
+    php8.1-common php8.1-mysql php8.1-zip php8.1-gd php8.1-mbstring php8.1-curl php8.1-xml \
+    php8.1-bcmath php8.1-intl php8.1-imagick locales ca-certificates && \
+    locale-gen en_US.UTF-8 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Configure PHP (limits are set at startup by docker-entrypoint.sh)
+RUN sed -i 's/max_input_time = .*/max_input_time = 223/' /etc/php/8.1/apache2/php.ini && \
+    sed -i 's/session\.gc_maxlifetime = .*/session.gc_maxlifetime = 604800/' /etc/php/8.1/apache2/php.ini && \
+    sed -i 's/session\.gc_probability = .*/session.gc_probability = 1/' /etc/php/8.1/apache2/php.ini && \
+    sed -i 's/session\.gc_divisor = .*/session.gc_divisor = 1000/' /etc/php/8.1/apache2/php.ini
+
+# Enable Apache modules
+RUN a2enmod rewrite ssl headers
+
+# Set global ServerName to avoid AH00558 warning
+RUN echo "ServerName localhost" > /etc/apache2/conf-available/servername.conf \
+    && a2enconf servername
+
+# Set working directory
+WORKDIR /var/www/html/monarc
+
+# Configure Apache (APP_ENV is passed from the container environment, production by default)
+RUN echo '<VirtualHost *:80>\n\
+    ServerName localhost\n\
+    DocumentRoot /var/www/html/monarc/public\n\
+\n\
+    <Directory /var/www/html/monarc/public>\n\
+        DirectoryIndex index.php\n\
+        AllowOverride All\n\
+        Require all granted\n\
+    </Directory>\n\
+\n\
+    <IfModule mod_headers.c>\n\
+       Header always set X-Content-Type-Options nosniff\n\
+       Header always set X-XSS-Protection "1; mode=block"\n\
+       Header always set X-Robots-Tag none\n\
+       Header always set X-Frame-Options SAMEORIGIN\n\
+    </IfModule>\n\
+\n\
+    PassEnv APP_ENV\n\
+    SetEnv APP_DIR /var/www/html/monarc\n\
+</VirtualHost>' > /etc/apache2/sites-available/000-default.conf
+
+# Allow Apache override to all
+RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
+
+ENV APP_ENV=production
+ENV APP_DIR=/var/www/html/monarc
+
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Copy the application prepared by the CI
+COPY . /var/www/html/monarc
+RUN mkdir -p /var/www/html/monarc/data/cache \
+    /var/www/html/monarc/data/LazyServices/Proxy \
+    /var/www/html/monarc/data/DoctrineORMModule/Proxy \
+    /var/www/html/monarc/data/import/files \
+    /var/www/html/monarc/data/json && \
+    chown -R www-data:www-data /var/www/html/monarc
+
+EXPOSE 80
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["apachectl", "-D", "FOREGROUND"]

@@ -19,12 +19,12 @@ APP_PATH="/var/www/html/zm-backoffice"
 LOCAL_PACKAGE_VERSION=$(sed -nE 's/^[[:space:]]*"monarc\/core":[[:space:]]*"\^([0-9]+\.[0-9]+)\.[0-9]+".*/\1.999/p' "${APP_DIR}/composer.json")
 
 SHARED_NG_NAME="ng_anr"
-SHARED_NG_REMOTE_URL="https://github.com/monarc-project/ng-anr.git"
+SHARED_NG_REMOTE_URL="https://github.com/ASINBenin/ng-anr.git"
 SHARED_NG_LOCAL_TARGET="../../ng-anr"
 SHARED_NG_CONTAINER_PATH="/var/www/html/ng-anr"
 
 APP_NG_NAME="ng_backoffice"
-APP_NG_REMOTE_URL="https://github.com/monarc-project/ng-backoffice.git"
+APP_NG_REMOTE_URL="https://github.com/ASINBenin/ng-backoffice.git"
 APP_NG_LOCAL_TARGET="../../ng-backoffice"
 APP_NG_CONTAINER_PATH="/var/www/html/ng-backoffice"
 

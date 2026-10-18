@@ -2,10 +2,14 @@ name: MonarcAppBO releases
 
 on:
   push:
-    branches: [ 'master' ]
+    branches: [ 'master', 'master-asin' ]
     tags: [ 'v*.*', 'v*.*.*', 'v*.*.*-*' ]
   pull_request:
     branches: [ 'master' ]
+
+permissions:
+  contents: write
+  packages: write
 
 jobs:
   build:
@@ -48,34 +52,18 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    - uses: oprypin/find-latest-tag@v1
-      with:
-        repository: monarc-project/ng-anr
-        releases-only: true
-      id: ng_anr_lasttag
-
-    - run: echo "ng-anr is at version ${{ steps.ng_anr_lasttag.outputs.tag }}"
-
     - name: Install ng-anr
       uses: actions/checkout@v3
       with:
-        repository: monarc-project/ng-anr
-        ref: ${{ steps.ng_anr_lasttag.outputs.tag }}
+        repository: ASINBenin/ng-anr
+        ref: master-asin
         path: './node_modules/ng_anr'
-
-    - uses: oprypin/find-latest-tag@v1
-      with:
-        repository: monarc-project/ng-backoffice
-        releases-only: true
-      id: ng_backoffice_lasttag
-
-    - run: echo "ng-backoffice is at version ${{ steps.ng_backoffice_lasttag.outputs.tag }}"
 
     - name: Install ng-backoffice
       uses: actions/checkout@v3
       with:
-        repository: monarc-project/ng-backoffice
-        ref: ${{ steps.ng_backoffice_lasttag.outputs.tag }}
+        repository: ASINBenin/ng-backoffice
+        ref: master
         path: './node_modules/ng_backoffice'
 
     - name: Install ng-backoffice dependencies
@@ -105,3 +93,87 @@ jobs:
           ../${{ steps.repository.outputs.pathref }}.tar.gz
         fail_on_unmatched_files: true
       if: startsWith(github.ref, 'refs/tags/')
+
+    # Docker image: built from the application prepared above (nothing is built at container startup)
+    - name: Prepare app image build context
+      if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/master-asin'
+      run: |
+        rm -rf .docker-release-context
+        mkdir -p .docker-release-context
+        tar \
+          --exclude .git \
+          --exclude .github \
+          --exclude .idea \
+          --exclude .vscode \
+          --exclude vagrant \
+          --exclude INSTALL \
+          --exclude .env \
+          --exclude .env.dev \
+          --exclude .DS_Store \
+          --exclude .docker-release-context \
+          -cf - . | tar -xf - -C .docker-release-context
+        rm -rf .docker-release-context/data
+        rm -f .docker-release-context/.dockerignore
+
+    - name: Set image name
+      id: image_names
+      if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/master-asin'
+      run: |
+        owner=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
+        repo=$(echo "${GITHUB_REPOSITORY#*/}" | tr '[:upper:]' '[:lower:]')
+        echo "app=ghcr.io/${owner}/${repo}" >> "$GITHUB_OUTPUT"
+
+    - name: Set up Docker Buildx
+      if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/master-asin'
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to GHCR
+      if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/master-asin'
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Docker metadata (app)
+      id: meta_app
+      if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/master-asin'
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ steps.image_names.outputs.app }}
+        tags: |
+          type=raw,value=${{ github.ref_name }}
+          type=sha,prefix=sha-,format=short
+          type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
+        labels: |
+          org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          org.opencontainers.image.revision=${{ github.sha }}
+
+    # A version tag reuses the exact image already built and tested for this commit on master-asin
+    # (sha-<commit>), instead of rebuilding it with possibly newer modules.
+    - name: Promote tested app image (tags)
+      id: promote_app
+      if: startsWith(github.ref, 'refs/tags/')
+      run: |
+        src="${{ steps.image_names.outputs.app }}:sha-${GITHUB_SHA::7}"
+        if docker buildx imagetools inspect "$src" >/dev/null 2>&1; then
+          docker buildx imagetools create -t "${{ steps.image_names.outputs.app }}:${GITHUB_REF_NAME}" "$src"
+          echo "Promoted $src as ${GITHUB_REF_NAME}"
+          echo "done=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "No tested image $src found, building it."
+          echo "done=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Build and push app image
+      if: (startsWith(github.ref, 'refs/tags/') && steps.promote_app.outputs.done != 'true') || github.ref == 'refs/heads/master-asin'
+      uses: docker/build-push-action@v6
+      with:
+        context: ./.docker-release-context
+        file: ./.docker-release-context/Dockerfile.release
+        push: true
+        platforms: linux/amd64
+        cache-from: type=gha,scope=release-bo-image
+        cache-to: type=gha,mode=max,scope=release-bo-image
+        tags: ${{ steps.meta_app.outputs.tags }}
+        labels: ${{ steps.meta_app.outputs.labels }}
