@@ -127,13 +127,18 @@ if [ ! -f "/var/www/html/monarc/.docker-initialized" ]; then
     'smtpOptions' => [
         'name'              => '${DOMAIN_BO:-localhost}',
         'host'              => '${SMTP_HOST}',
-        'port'              => ${SMTP_PORT:-587},
+        'port'              => ${SMTP_PORT:-587},"
+        # Without SMTP_USER the server is used as is, with no login and no TLS (mail catcher of a development setup)
+        if [ -n "${SMTP_USER:-}" ]; then
+            SMTP_CONFIG_BLOCK+="
         'connection_class'  => 'login',
         'connection_config' => [
             'username' => '${SMTP_USER}',
             'password' => '${SMTP_PASSWORD}',
             'ssl'      => 'tls',
-        ],
+        ],"
+        fi
+        SMTP_CONFIG_BLOCK+="
     ],"
     fi
 
@@ -232,6 +237,20 @@ EOF
     echo -e "${GREEN}Initialization complete!${NC}"
 else
     echo -e "${GREEN}Application already initialized, starting services...${NC}"
+fi
+
+# Laminas keeps its configuration and module caches in the data volume: a cache written by a previous image would
+# hide the routes and services of the new code, so it is rebuilt at every start.
+rm -f /var/www/html/monarc/data/cache/module-*-cache.*
+
+# Development with mounted sources (zm-*, ng-*): their views and translations are not in the image, so they are
+# linked and compiled again at every start. A release image has no mounted module and skips this.
+if mountpoint -q node_modules/ng_client 2>/dev/null || mountpoint -q node_modules/ng_backoffice 2>/dev/null; then
+    echo -e "${YELLOW}Mounted sources detected: linking the module resources and compiling the translations...${NC}"
+    ./scripts/link_modules_resources.sh || echo -e "${YELLOW}Linking the module resources failed.${NC}"
+    # The BackOffice image has no node: its translations are compiled from the host
+    # (monarc-deploy/scripts/dev/compile-bo-translations.sh).
+    ./scripts/compile_translations.sh || echo -e "${YELLOW}Translations not compiled in this container.${NC}"
 fi
 
 # PHP limits, applied at every start (defaults = official values of the ansible-ubuntu deployment)
