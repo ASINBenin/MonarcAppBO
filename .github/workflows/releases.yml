@@ -145,6 +145,15 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    # Commits of every module built into the image, readable with docker inspect.
+    - name: Module commits
+      id: modules
+      if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/master-asin'
+      run: |
+        php_modules=$(php -r 'foreach (json_decode(file_get_contents("composer.lock"), true)["packages"] as $p) { if (str_starts_with($p["name"], "monarc/")) { echo basename($p["source"]["url"], ".git"), "@", $p["source"]["reference"], " "; } }')
+        ng_modules=$(grep -E '^ng_[a-z]+=[0-9a-f]{40}$' ng-modules.lock | sed 's/_/-/; s/=/@/' | tr '\n' ' ')
+        echo "list=${php_modules}${ng_modules% }" >> "$GITHUB_OUTPUT"
+
     - name: Docker metadata (app)
       id: meta_app
       if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/master-asin'
@@ -158,6 +167,7 @@ jobs:
         labels: |
           org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
           org.opencontainers.image.revision=${{ github.sha }}
+          bj.asin.monarc.modules=${{ steps.modules.outputs.list }}
 
     # A version tag reuses the exact image already built and tested for this commit on master-asin
     # (sha-<commit>), instead of rebuilding it with possibly newer modules.
