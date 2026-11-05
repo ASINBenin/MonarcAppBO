@@ -53,18 +53,27 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
+    # ng modules are taken at the commits pinned in ng-modules.lock; a missing entry stops the build.
+    - name: Read pinned ng modules
+      id: ng
+      run: |
+        for module in ng_anr ng_backoffice; do
+          grep -qE "^${module}=[0-9a-f]{40}$" ng-modules.lock || { echo "::error::${module} missing in ng-modules.lock"; exit 1; }
+        done
+        grep -E '^ng_[a-z]+=[0-9a-f]{40}$' ng-modules.lock >> "$GITHUB_OUTPUT"
+
     - name: Install ng-anr
       uses: actions/checkout@v3
       with:
         repository: ASINBenin/ng-anr
-        ref: master-asin
+        ref: ${{ steps.ng.outputs.ng_anr }}
         path: './node_modules/ng_anr'
 
     - name: Install ng-backoffice
       uses: actions/checkout@v3
       with:
         repository: ASINBenin/ng-backoffice
-        ref: master-asin
+        ref: ${{ steps.ng.outputs.ng_backoffice }}
         path: './node_modules/ng_backoffice'
 
     - name: Install ng-backoffice dependencies
