@@ -37,11 +37,9 @@ jobs:
     - name: Validate composer.json and composer.lock
       run: composer validate
 
+    # Modules are taken at the commits pinned in composer.lock, so a commit always builds the same image.
     - name: Install PHP dependencies
       run: composer ins --prefer-dist --no-progress --no-suggest --no-dev
-
-    - name: Always fetch latest fork dependencies (bypass composer.lock for these 2)
-      run: composer update monarc/core monarc/backoffice --with-dependencies --no-dev
 
     - name: Symlink Monarc modules
       run: |
