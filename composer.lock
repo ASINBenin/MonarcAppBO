@@ -4664,12 +4664,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/ASINBenin/zm-backoffice.git",
-                "reference": "927c185df047d3fd80ad1785512fa18767e8d794"
+                "reference": "06c95052563eb8014e02df2b39032c857369a6cc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ASINBenin/zm-backoffice/zipball/927c185df047d3fd80ad1785512fa18767e8d794",
-                "reference": "927c185df047d3fd80ad1785512fa18767e8d794",
+                "url": "https://api.github.com/repos/ASINBenin/zm-backoffice/zipball/06c95052563eb8014e02df2b39032c857369a6cc",
+                "reference": "06c95052563eb8014e02df2b39032c857369a6cc",
                 "shasum": ""
             },
             "require": {
@@ -4749,12 +4749,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/ASINBenin/zm-core.git",
-                "reference": "dc39d66e16d68cba217a8909ed139fa5d094f8d0"
+                "reference": "42d8cce9ace365f6bd8bcf2bea595ddb6731b06e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ASINBenin/zm-core/zipball/dc39d66e16d68cba217a8909ed139fa5d094f8d0",
-                "reference": "dc39d66e16d68cba217a8909ed139fa5d094f8d0",
+                "url": "https://api.github.com/repos/ASINBenin/zm-core/zipball/42d8cce9ace365f6bd8bcf2bea595ddb6731b06e",
+                "reference": "42d8cce9ace365f6bd8bcf2bea595ddb6731b06e",
                 "shasum": ""
             },
             "require": {
