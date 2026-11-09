@@ -197,3 +197,17 @@ jobs:
         cache-to: type=gha,mode=max,scope=release-bo-image
         tags: ${{ steps.meta_app.outputs.tags }}
         labels: ${{ steps.meta_app.outputs.labels }}
+
+    # Tells monarc-deploy that a test image is published: the test server updates itself (deploy-test.yml).
+    # Skipped when the token or the target repository is not configured.
+    - name: Notify test server
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master-asin'
+      env:
+        GH_TOKEN: ${{ secrets.MONARC_DEPLOY_TOKEN }}
+        DEPLOY_REPO: ${{ vars.MONARC_DEPLOY_REPO }}
+      run: |
+        if [ -z "$GH_TOKEN" ] || [ -z "$DEPLOY_REPO" ]; then
+          echo "MONARC_DEPLOY_TOKEN or MONARC_DEPLOY_REPO not set: test server not notified."
+          exit 0
+        fi
+        gh api "repos/${DEPLOY_REPO}/dispatches" -f event_type=images-published

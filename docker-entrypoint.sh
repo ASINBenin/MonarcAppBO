@@ -120,6 +120,12 @@ if [ ! -f "/var/www/html/monarc/.docker-initialized" ]; then
         1|true|yes|on) TWO_FACTOR_AUTH_ENFORCED_PHP=true ;;
     esac
 
+    # Public addresses of the BackOffice and of the entities, for the links of the emails (same as the FrontOffice).
+    HTTPS_PORT_SUFFIX=""
+    if [ "${HTTPS_PORT:-443}" != "443" ]; then
+        HTTPS_PORT_SUFFIX=":${HTTPS_PORT}"
+    fi
+
     # Emit smtpOptions only if SMTP_HOST is set (same block as the FrontOffice entrypoint).
     SMTP_CONFIG_BLOCK=""
     if [ -n "${SMTP_HOST:-}" ]; then
@@ -195,6 +201,8 @@ return [
 
     // Settings of the official ansible-ubuntu BackOffice configuration
     'instanceName' => '${INSTANCE_NAME:-MONARC BackOffice}', // label of the 2FA QR code
+    'publicHost' => 'https://${DOMAIN_BO:-localhost}${HTTPS_PORT_SUFFIX}${PATH_PREFIX:-}',
+    'entitiesPublicHost' => 'https://${DOMAIN_FO:-localhost}${HTTPS_PORT_SUFFIX}', // followed by /<proxy alias>/
     'twoFactorAuthEnforced' => ${TWO_FACTOR_AUTH_ENFORCED_PHP},
 
     'email' => [
@@ -248,8 +256,8 @@ rm -f /var/www/html/monarc/data/cache/module-*-cache.*
 if mountpoint -q node_modules/ng_client 2>/dev/null || mountpoint -q node_modules/ng_backoffice 2>/dev/null; then
     echo -e "${YELLOW}Mounted sources detected: linking the module resources and compiling the translations...${NC}"
     ./scripts/link_modules_resources.sh || echo -e "${YELLOW}Linking the module resources failed.${NC}"
-    # The BackOffice image has no node: its translations are compiled from the host
-    # (monarc-deploy/scripts/dev/compile-bo-translations.sh).
+    # The BackOffice image has no node: its libraries and translations are built on the host and mounted
+    # (monarc-deploy: ./monarc assets).
     ./scripts/compile_translations.sh || echo -e "${YELLOW}Translations not compiled in this container.${NC}"
 fi
 
