@@ -213,6 +213,12 @@ ${SMTP_CONFIG_BLOCK}
 
     'mospApiUrl' => 'https://objects.monarc.lu/api/',
 
+    // Lecture des statistiques de toutes les entités (jeton administrateur du service)
+    'statsApi' => [
+        'baseUrl' => '${STATS_API_BASE_URL:-}',
+        'adminToken' => '${STATS_ADMIN_TOKEN:-}',
+    ],
+
     'monarc' => [
         'ttl' => 60, // timeout
     ],
