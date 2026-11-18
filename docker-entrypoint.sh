@@ -148,6 +148,22 @@ if [ ! -f "/var/www/html/monarc/.docker-initialized" ]; then
     ],"
     fi
 
+    # Keycloak offered only when configured; KEYCLOAK_INTERNAL_URL = address seen by the server
+    KEYCLOAK_ACTIVE_PHP=false
+    if [ -n "${KEYCLOAK_URL:-}" ] && [ -n "${KEYCLOAK_REALM:-}" ] && [ -n "${KEYCLOAK_CLIENT_ID:-}" ] && [ -n "${KEYCLOAK_CLIENT_SECRET:-}" ]; then
+        KEYCLOAK_ACTIVE_PHP=true
+        if [ "${#MONARC_SSO_ENCRYPTION_KEY}" -lt 32 ]; then
+            echo -e "${RED}MONARC_SSO_ENCRYPTION_KEY must have at least 32 characters: Keycloak login is hidden.${NC}"
+        fi
+    else
+        echo -e "${YELLOW}KEYCLOAK_URL, KEYCLOAK_REALM, KEYCLOAK_CLIENT_ID or KEYCLOAK_CLIENT_SECRET is empty: Keycloak login is disabled.${NC}"
+    fi
+    # Button label, its quotes and backslashes escaped for the generated PHP
+    KEYCLOAK_DEFAULT_NAME="Compte de l'organisation"
+    KEYCLOAK_NAME_PHP=$(printf '%s' "${KEYCLOAK_NAME:-$KEYCLOAK_DEFAULT_NAME}" | sed -e 's/[\\'"'"']/\\&/g')
+    KEYCLOAK_REALM_URL="${KEYCLOAK_URL:-}/realms/${KEYCLOAK_REALM:-}"
+    KEYCLOAK_INTERNAL_REALM_URL="${KEYCLOAK_INTERNAL_URL:-${KEYCLOAK_URL:-}}/realms/${KEYCLOAK_REALM:-}"
+
     # Generate local config (always override to match container DB)
     echo -e "${YELLOW}Creating local configuration...${NC}"
     cat > config/autoload/local.php <<EOF
@@ -212,6 +228,31 @@ return [
 ${SMTP_CONFIG_BLOCK}
 
     'mospApiUrl' => 'https://objects.monarc.lu/api/',
+
+    'sso_providers' => [
+        'keycloak' => [
+            'name'             => '${KEYCLOAK_NAME_PHP}',
+            'is_active'        => ${KEYCLOAK_ACTIVE_PHP},
+            'type'             => 'oauth2',
+            'authorize_url'    => '${KEYCLOAK_REALM_URL}/protocol/openid-connect/auth',
+            'token_url'        => '${KEYCLOAK_INTERNAL_REALM_URL}/protocol/openid-connect/token',
+            'userinfo_url'     => '${KEYCLOAK_INTERNAL_REALM_URL}/protocol/openid-connect/userinfo',
+            'jwks_url'         => '${KEYCLOAK_INTERNAL_REALM_URL}/protocol/openid-connect/certs',
+            'client_id'        => '${KEYCLOAK_CLIENT_ID:-}',
+            'client_secret'    => '${KEYCLOAK_CLIENT_SECRET:-}',
+            'scope'            => 'openid profile email',
+            // AD login (UPN, an e-mail)
+            'identifier_claim' => 'preferred_username',
+            // Links the MONARC account with the same e-mail
+            'auto_link'        => true,
+            'display'          => [
+                'icon'       => 'account_circle',
+                'background' => '#ffffff',
+                'color'      => '#003366',
+                'border'     => '#003366',
+            ],
+        ],
+    ],
 
     // Lecture des statistiques de toutes les entités (jeton administrateur du service)
     'statsApi' => [
